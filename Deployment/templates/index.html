@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Emotion Recognition</title>
+</head>
+<body>
+    <h1>Audio Emotion Recognition</h1>
+    <form action="/" method="post" enctype="multipart/form-data">
+        {% if not capturing %}
+            <input type="hidden" name="start_capture" value="true">
+            <input type="submit" value="Start Capture">
+        {% else %}
+            <input type="hidden" name="stop_capture" value="true">
+            <input type="submit" value="Stop Capture">
+        {% endif %}
+    </form>
+    {% if timer is not none %}
+        <p>Time Elapsed: {{ timer }} seconds</p>
+    {% endif %}
+    {% if output_text %}
+        <h2>Result:</h2>
+        <p>{{ output_text }}</p>
+    {% endif %}
+    <h1>History</h1>
+    {% if previous_predictions %}
+        <ul>
+            {% for prediction in previous_predictions %}
+                <li>{{ prediction }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
