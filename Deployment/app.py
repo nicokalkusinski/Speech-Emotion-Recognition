@@ -65,7 +65,6 @@ def process_audio():
     else:
         return "No audio file captured."
 
-
 def get_features(file_path):
   signal, sampling_rate = audiofile.read(file_path, duration=4, always_2d=True)
   features = smile.process_signal(signal, sampling_rate)

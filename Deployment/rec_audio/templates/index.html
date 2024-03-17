@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recorder</title>
+</head>
+<body>
+    <h1>Audio Recorder</h1>
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
+    <script>
+        function startRecording() {
+            fetch('/start_recording', {method: 'POST'})
+                .then(response => console.log(response));
+        }
+
+        function stopRecording() {
+            fetch('/stop_recording', {method: 'POST'})
+                .then(response => console.log(response));
+        }
+    </script>
+</body>
+</html>
