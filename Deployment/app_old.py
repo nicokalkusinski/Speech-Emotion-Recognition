@@ -16,7 +16,7 @@ smile = opensmile.Smile(
     feature_level=opensmile.FeatureLevel.Functionals,
 )
 
-previous_predictions = {}
+PREVIOUS_PREDS = {}
 
 capturing = False
 start_time = None
@@ -100,7 +100,7 @@ def prediction(audio_file):
 
     # Store the prediction with the input file name as key
     filename = audio_file.filename
-    previous_predictions[filename] = y_pred[0][0]
+    PREVIOUS_PREDS[filename] = y_pred[0][0]
 
     # Remove the temporary audio file
     os.remove(temp_audio_path)

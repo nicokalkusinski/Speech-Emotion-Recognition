@@ -1,4 +1,6 @@
+import json
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit
 import os
 import pyaudio
 import wave
@@ -11,6 +13,7 @@ import os
 import time
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Global variables
 RECORDING = False
@@ -23,13 +26,12 @@ ITERATION = 1
 RECORD_FOLDER = 'audio'
 WAVE_OUTPUT_FILENAME = f"output_{ITERATION}.wav"
 PREDICTION = 'NONE'
+PREVIOUS_PREDS = []
 
 smile = opensmile.Smile(
     feature_set=opensmile.FeatureSet.eGeMAPSv02,
     feature_level=opensmile.FeatureLevel.Functionals,
 )
-
-previous_predictions = []
 
 def process_audio(file_path):
     if os.path.exists(file_path):
@@ -59,6 +61,9 @@ def load_body():
     return [model, encoder, scaler]
 
 def prediction(audio_file):
+    global PREDICTION
+    global PREVIOUS_PREDS
+
     # Get features from the saved audio file
     res = get_features(audio_file)
     res = scaler.transform(res)
@@ -66,11 +71,17 @@ def prediction(audio_file):
     # Predict emotion using the model
     predictions = model.predict(res).reshape(1, -1)
     y_pred = encoder.inverse_transform(predictions)
-    print("Predicted emotion:", y_pred[0][0])
+    # print("Predicted emotion:", y_pred[0][0])
 
-    previous_predictions.append(y_pred[0][0])
+    PREDICTION = y_pred[0][0]
+    PREVIOUS_PREDS.append(PREDICTION)
 
-    return y_pred[0][0]
+    # Emit prediction event to update HTML
+    socketio.emit('update_prediction', {'prediction': PREDICTION, 'previous_preds': PREVIOUS_PREDS})
+
+    # print("DEBUG: ", PREDICTION, PREVIOUS_PREDS)
+
+    return PREDICTION, PREVIOUS_PREDS
 
 def remove_file(file_path):
     os.remove(file_path)
@@ -129,10 +140,13 @@ def setup_recording():
 
 def handle_prediction(file_path):
     global PREDICTION
+    global PREVIOUS_PREDS
 
-    PREDICTION = prediction(file_path)
+    PREDICTION, PREVIOUS_PREDS = prediction(file_path)
     remove_file(file_path)
-    print(PREDICTION)
+
+    # return render_template('index.html', prediction=PREDICTION, recording=RECORDING, PREVIOUS_PREDS=PREVIOUS_PREDS)
+    print("Prediction: ", PREDICTION)
 
 def reset():
     global ITERATION
@@ -140,9 +154,15 @@ def reset():
     ITERATION = 1
     PREDICTION = 'NONE'
 
+model, encoder, scaler = load_body()
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    global PREDICTION
+    global RECORDING
+    global PREVIOUS_PREDS
+    
+    return render_template('index.html', prediction=PREDICTION, recording=RECORDING, previous_preds=PREVIOUS_PREDS)
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
@@ -154,9 +174,7 @@ def start_recording():
         RECORDING = True
         threading.Thread(target=record_audio).start()
 
-    return 'Recording started...'
-
-model, encoder, scaler = load_body()
+    return render_template('index.html', prediction=PREDICTION, recording=RECORDING, previous_preds=PREVIOUS_PREDS)
 
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
@@ -164,7 +182,13 @@ def stop_recording():
 
     RECORDING = False
 
-    return 'Recording stopped...'
+    print("*Start recording")
+
+    return render_template('index.html', prediction=PREDICTION, recording=RECORDING, previous_preds=PREVIOUS_PREDS)
+
+@socketio.on('connect')
+def handle_connect():
+    emit('update_prediction', {'prediction': PREDICTION, 'previous_preds': PREVIOUS_PREDS})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)

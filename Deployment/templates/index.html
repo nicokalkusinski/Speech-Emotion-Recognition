@@ -24,9 +24,9 @@
         <p>{{ output_text }}</p>
     {% endif %}
     <h1>History</h1>
-    {% if previous_predictions %}
+    {% if PREVIOUS_PREDS %}
         <ul>
-            {% for prediction in previous_predictions %}
+            {% for prediction in PREVIOUS_PREDS %}
                 <li>{{ prediction }}</li>
             {% endfor %}
         </ul>
