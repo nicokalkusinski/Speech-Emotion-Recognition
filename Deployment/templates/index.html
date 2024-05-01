@@ -3,33 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Emotion Recognition</title>
+    <title>Audio Recorder</title>
 </head>
 <body>
-    <h1>Audio Emotion Recognition</h1>
-    <form action="/" method="post" enctype="multipart/form-data">
-        {% if not capturing %}
-            <input type="hidden" name="start_capture" value="true">
-            <input type="submit" value="Start Capture">
-        {% else %}
-            <input type="hidden" name="stop_capture" value="true">
-            <input type="submit" value="Stop Capture">
-        {% endif %}
-    </form>
-    {% if timer is not none %}
-        <p>Time Elapsed: {{ timer }} seconds</p>
-    {% endif %}
-    {% if output_text %}
-        <h2>Result:</h2>
-        <p>{{ output_text }}</p>
-    {% endif %}
-    <h1>History</h1>
-    {% if PREVIOUS_PREDS %}
-        <ul>
-            {% for prediction in PREVIOUS_PREDS %}
-                <li>{{ prediction }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+    <h1>Audio Recorder</h1>    
+
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
+    
+    <!-- Display prediction if it is not NONE -->
+    <p id="predictionText"></p>
+
+    <!-- Display previous predictions -->
+    <h2>Previous Predictions:</h2>
+    <ul id="previousPredictions"></ul>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Update prediction text and previous predictions list
+        socket.on('update_prediction', function(data) {
+            const predictionText = document.getElementById('predictionText');
+            const previousPredictions = document.getElementById('previousPredictions');
+
+            predictionText.textContent = `Prediction: ${data.prediction}`;
+
+            // Prepend new prediction with timestamp to the previous predictions list
+            const li = document.createElement('li');
+            const timestamp = new Date().toLocaleString();
+            li.textContent = `${timestamp}: ${data.prediction}`;
+            previousPredictions.insertBefore(li, previousPredictions.firstChild);
+        });
+
+        function startRecording() {
+            fetch('/start_recording', {method: 'POST'})
+                .then(response => console.log(response));
+        }
+
+        function stopRecording() {
+            fetch('/stop_recording', {method: 'POST'})
+                .then(response => console.log(response));
+        }
+    </script>
 </body>
 </html>

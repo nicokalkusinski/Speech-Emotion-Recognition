@@ -49,12 +49,12 @@ def get_features(file_path):
 
 def load_body():
     #load the model
-    model = tf.keras.models.load_model("../model/model_92.keras")
+    model = tf.keras.models.load_model("model/model_92.keras")
 
-    with open('../model/encoder_final_92.pickle', 'rb') as f:
+    with open('model/encoder_final_92.pickle', 'rb') as f:
         encoder = pickle.load(f)
 
-    with open('../model/scaler_final_92.pickle', 'rb') as f:
+    with open('model/scaler_final_92.pickle', 'rb') as f:
         scaler = pickle.load(f)
     
     print("Model, encoder and scaler loaded successfully.")

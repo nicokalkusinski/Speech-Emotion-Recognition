@@ -1,0 +1,6 @@
+audiofile==1.4.0
+Flask==3.0.3
+Flask_SocketIO==5.3.6
+opensmile==2.5.0
+pyaudio==0.2.14
+tensorflow==2.16.1
