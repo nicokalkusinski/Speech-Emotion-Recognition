@@ -11,6 +11,9 @@ import audiofile
 import tensorflow as tf
 import os
 import time
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+import numpy as np
+import joblib
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -59,6 +62,16 @@ def load_body():
     
     print("Model, encoder and scaler loaded successfully.")
     return [model, encoder, scaler]
+
+def load_body_from_joblib():
+    #load the model
+    model = tf.keras.models.load_model("model/model_92.keras")
+
+    scaler_loaded = joblib.load('model/scaler_92.joblib')
+    encoder_loaded = joblib.load('model/encoder_92.joblib')
+
+    return [model, encoder_loaded, scaler_loaded]
+
 
 def prediction(audio_file):
     global PREDICTION
