@@ -12,6 +12,7 @@ import tensorflow as tf
 import os
 import time
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.svm import SVC
 import numpy as np
 import joblib
 
@@ -50,7 +51,7 @@ def get_features(file_path):
   features = smile.process_signal(signal, sampling_rate)
   return features
 
-def load_body():
+def load_cnn():
     #load the model
     model = tf.keras.models.load_model("model/model_92.keras")
 
@@ -63,15 +64,64 @@ def load_body():
     print("Model, encoder and scaler loaded successfully.")
     return [model, encoder, scaler]
 
-def load_body_from_joblib():
+
+def load_disgust():
     #load the model
-    model = tf.keras.models.load_model("model/model_92.keras")
+    with open('model/svm_disgust_model.pkl', 'rb') as model_file:
+        model = pickle.load(model_file)
 
-    scaler_loaded = joblib.load('model/scaler_92.joblib')
-    encoder_loaded = joblib.load('model/encoder_92.joblib')
+    with open('model/svm_disgust_scaler.pkl', 'rb') as scaler_file:
+        scaler = pickle.load(scaler_file)
+    
+    print("Disgust model and scaler loaded successfully.")
+    return [model, scaler]
 
-    return [model, encoder_loaded, scaler_loaded]
+def load_fear():
+    #load the model
+    with open('model/svm_fear_model.pkl', 'rb') as model_file:
+        model = pickle.load(model_file)
 
+    with open('model/svm_fear_scaler.pkl', 'rb') as scaler_file:
+        scaler = pickle.load(scaler_file)
+    
+    print("Fear model and scaler loaded successfully.")
+    return [model, scaler]
+
+def load_surprise():
+    #load the model
+    with open('model/svm_surprise_model.pkl', 'rb') as model_file:
+        model = pickle.load(model_file)
+
+    with open('model/svm_surprise_scaler.pkl', 'rb') as scaler_file:
+        scaler = pickle.load(scaler_file)
+    
+    print("Surprise model and scaler loaded successfully.")
+    return [model, scaler]
+
+def pred_disgust(data):
+    _data = scaler_disgust.transform(data)
+    prediction = model_disgust.predict(_data)
+    return prediction[0] == 1
+
+def pred_fear(data):
+    _data = scaler_fear.transform(data)
+    prediction = model_fear.predict(_data)
+    return prediction[0] == 1
+
+def pred_surprise(data):
+    _data = scaler_surprise.transform(data)
+    prediction = model_surprise.predict(_data)
+    return prediction[0] == 1
+
+def pred_cnn(data):
+    #scale the data using CNN scaler
+    _data = scaler_cnn.transform(data)
+
+    # Predict emotion using the CNN model
+    predictions = model_cnn.predict(_data).reshape(1, -1)
+    y_pred = encoder_cnn.inverse_transform(predictions)
+
+    return y_pred[0][0]
 
 def prediction(audio_file):
     global PREDICTION
@@ -79,20 +129,29 @@ def prediction(audio_file):
 
     # Get features from the saved audio file
     res = get_features(audio_file)
-    res = scaler.transform(res)
 
-    # Predict emotion using the model
-    predictions = model.predict(res).reshape(1, -1)
-    y_pred = encoder.inverse_transform(predictions)
-    # print("Predicted emotion:", y_pred[0][0])
+    #Predict using FEAR, DISGUST and SURPRISE SVM models first
+    if pred_disgust(res):
+        PREDICTION = "Disgust"
+        PREVIOUS_PREDS.append(PREDICTION)
+        return PREDICTION, PREVIOUS_PREDS
+    
+    if pred_fear(res):
+        PREDICTION = "Fear"
+        PREVIOUS_PREDS.append(PREDICTION)
+        return PREDICTION, PREVIOUS_PREDS
 
-    PREDICTION = y_pred[0][0]
+    if pred_surprise(res):
+        PREDICTION = "Surprise"
+        PREVIOUS_PREDS.append(PREDICTION)
+        return PREDICTION, PREVIOUS_PREDS
+
+    # IF 3 SVM MODELS PREDICTED DIFFERENT EMOTION
+    PREDICTION = pred_cnn(res)
     PREVIOUS_PREDS.append(PREDICTION)
 
     # Emit prediction event to update HTML
     socketio.emit('update_prediction', {'prediction': PREDICTION, 'previous_preds': PREVIOUS_PREDS})
-
-    # print("DEBUG: ", PREDICTION, PREVIOUS_PREDS)
 
     return PREDICTION, PREVIOUS_PREDS
 
@@ -167,7 +226,10 @@ def reset():
     ITERATION = 1
     PREDICTION = 'NONE'
 
-model, encoder, scaler = load_body()
+model_cnn, encoder_cnn, scaler_cnn = load_cnn()
+model_disgust, scaler_disgust = load_disgust()
+model_fear, scaler_fear = load_fear()
+model_surprise, scaler_surprise = load_surprise()
 
 @app.route('/')
 def index():
