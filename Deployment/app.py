@@ -32,11 +32,13 @@ WAVE_OUTPUT_FILENAME = f"output_{ITERATION}.wav"
 PREDICTION = 'NONE'
 PREVIOUS_PREDS = []
 
+# using eGeMaps2.0 as the feature set
 smile = opensmile.Smile(
     feature_set=opensmile.FeatureSet.eGeMAPSv02,
     feature_level=opensmile.FeatureLevel.Functionals,
 )
 
+# process live audio of uploaded file 
 def process_audio(file_path):
     if os.path.exists(file_path):
         audio_file = open(file_path, 'rb')
@@ -46,6 +48,7 @@ def process_audio(file_path):
     else:
         return "No audio file captured."
 
+# extracting the features
 def get_features(file_path):
   signal, sampling_rate = audiofile.read(file_path, duration=4, always_2d=True)
   features = smile.process_signal(signal, sampling_rate)
